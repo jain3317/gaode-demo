@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <style>
+        html,
+        body,
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <title>街道面</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <script src="https://webapi.amap.com/maps?v=1.4.15&key=e4de42f852511d4fd44b8f66d58205c6&plugin=AMap.PolyEditor"></script>
+    <script src="https://a.amap.com/jsapi_demos/static/demo-center/js/demoutils.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script type="text/javascript">
+    var map = new AMap.Map('container', {
+        center: [116.397428, 39.90923],
+        layers: [
+            // 卫星
+            new AMap.TileLayer.Satellite(),
+            // 路网
+            new AMap.TileLayer.RoadNet()
+        ],
+        zoom: 13
+    });
+    let xmlhttp;
+    let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=lhwy%3ALH_BUILD&maxFeatures=50&outputFormat=application%2Fjson";
+
+    function loadMarkers(url){
+        xmlhttp=null;
+        if (window.XMLHttpRequest){// code for Firefox, Opera, IE7, etc.
+            xmlhttp=new XMLHttpRequest();
+        }else if (window.ActiveXObject){// code for IE6, IE5
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+
+        if (xmlhttp!=null){
+            xmlhttp.onreadystatechange = stateChange;
+            xmlhttp.open("GET",url,true);
+            xmlhttp.send(null);
+        }else{
+            alert("Your browser does not support XMLHTTP.");
+        }
+    }
+    function stateChange(){
+        if (xmlhttp.readyState === 4){// 4 = "loaded"
+            if (xmlhttp.status === 200){// 200 = "OK"
+                let data = xmlhttp.responseText;
+                data = JSON.parse(data);
+                let features = data.features;
+                for (let i = 0; i < features.length; i++) {
+                    let path = features[i].geometry.coordinates[0];
+                    let polygon = new AMap.Polygon({
+                        path: path,
+                        strokeColor: "yellow",
+                        strokeWeight: 50,
+                        strokeOpacity: 0.5,
+                        fillOpacity: 0.8,
+                        fillColor: 'red',
+                    })
+                    polygon.on("click",function (e){
+                        //构建信息窗体中显示的内容
+                        let lng = e.lnglat.getLng();
+                        let lat = e.lnglat.getLat();
+                        let address = features[i].properties.B_ADDRESS;
+                        var info = [];
+                        info.push("<div><div><img style=\"float:left;\" src=\" https://webapi.amap.com/images/autonavi.png \"/></div> ");
+                        info.push("<div style=\"padding:0px 0px 0px 4px;\"><b>高德软件</b>");
+                        info.push("电话 : 010-84107000   邮编 : 100102");
+                        info.push("地址 :"+address+"</div></div>");
+                        infoWindow = new AMap.InfoWindow({
+                            content: info.join("<br/>")  //使用默认信息窗体框样式，显示信息内容
+                        });
+                        infoWindow.open(map, [lng,lat]);
+                    })
+                    map.add(polygon)
+                    map.setFitView([ polygon ])
+                }
+
+            }else{
+                alert("Problem retrieving data:" + xmlhttp.statusText);
+            }
+        }
+    }
+
+    loadMarkers(url);
+
+
+
+
+
+
+</script>
+</body>
+</html>

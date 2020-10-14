@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>异步加载海量点</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <script src="https://cache.amap.com/lbs/static/es5.min.js"></script>
+    <script src="https://webapi.amap.com/maps?v=1.4.15&key=e4de42f852511d4fd44b8f66d58205c6"></script>
+    <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+    <style>
+        html,
+        body,
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .icons {
+            width: 51px;
+            height: 55px;
+            background-image: url("//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png");
+            background-size: auto;
+            padding-top: 15px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+</body>
+<script>
+
+    let count = 0; // 用来统计标记数量
+    let markerArr = [];
+    let xmlhttp;
+    let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=lhwy%3ALH_BUILD&maxFeatures=50&outputFormat=application%2Fjson";
+    const map = new AMap.Map('container', {
+        resizeEnable: true,
+        zoom:11,
+        center: [113.94528,22.54762]
+    });
+
+
+    function loadMarkers(url){
+        xmlhttp=null;
+        if (window.XMLHttpRequest){// code for Firefox, Opera, IE7, etc.
+            xmlhttp=new XMLHttpRequest();
+        }else if (window.ActiveXObject){// code for IE6, IE5
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+
+        if (xmlhttp!=null){
+            xmlhttp.onreadystatechange = stateChange;
+            xmlhttp.open("GET",url,true);
+            xmlhttp.send(null);
+        }else{
+            alert("Your browser does not support XMLHTTP.");
+        }
+    }
+    function stateChange(){
+        if (xmlhttp.readyState === 4){// 4 = "loaded"
+            if (xmlhttp.status === 200){// 200 = "OK"
+                let data = xmlhttp.responseText;
+                data = JSON.parse(data);
+                let features = data.features;
+                for (let i = 0; i < features.length; i++) {
+                    let locate = features[i].geometry.coordinates[0];
+
+                    // 获取点标记
+                    let position = getLocate(locate); // 获取坐标
+                    let content = getContent();
+                    let icon = "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png";
+                    let marker = new AMap.Marker({icon,position,content});
+
+                    // 判断标记是否在地图显示范围内
+                    let bounds = map.getBounds();
+                    // lng 精度 | lat 纬度
+                    // northeast 北 | southwest 南
+                    let nLng = bounds.northeast.lng;
+                    let nLat = bounds.northeast.lat;
+                    let sLng = bounds.southwest.lng;
+                    let sLat = bounds.southwest.lat;
+                    if((position[0] < nLng && position[1 ]< nLat)
+                        && (position[0] > sLng && position[1] > sLat)){
+                        map.add(marker);
+                        markerArr.push(marker);
+                    }
+                }
+            }else{
+                alert("Problem retrieving data:" + xmlhttp.statusText);
+            }
+        }
+    }
+
+    function getLocate(locateArr){
+        let x;
+        let y;
+        let len = locateArr.length;
+
+        if(len === 0) return [];
+        if(len === 1) return locateArr[0];
+
+        let mid = parseInt(len / 2);
+        if(len % 2 === 0){
+            x = (locateArr[mid-1][0] + locateArr[mid][0]) / 2;
+            y = (locateArr[mid-1][1] + locateArr[mid][1]) / 2;
+        }else{
+            x = locateArr[mid-1][0];
+            y = locateArr[mid-1][1];
+        }
+        return [x,y];
+    }
+
+
+    function getContent(){
+        return '<div class="icons" align="center"><b>'+(++count)+'</b></div>';
+    }
+
+    //地图边界范围坐标变化事件
+    function logMapBounds() {
+        // 初始化
+        map.remove(markerArr);
+        markerArr = [];
+        count = 0;
+
+        // 重新加载标记
+        loadMarkers(url);
+    }
+
+
+
+    //绑定地图移动与缩放事件
+    map.on('moveend', logMapBounds);
+    loadMarkers(url);
+
+</script>
+</html>
