@@ -20,7 +20,7 @@
 <body>
 <div id="container"></div>
 <script type="text/javascript">
-    var map = new AMap.Map('container', {
+    let map = new AMap.Map('container', {
         center: [116.397428, 39.90923],
         layers: [
             // 卫星
@@ -31,7 +31,8 @@
         zoom: 13
     });
     let xmlhttp;
-    let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=lhwy%3ALH_BUILD&maxFeatures=50&outputFormat=application%2Fjson";
+    // let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=lhwy%3ALH_BUILD&maxFeatures=50&outputFormat=application%2Fjson";
+    let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=lhwy%3ALH_STREET&maxFeatures=50&outputFormat=application%2Fjson";
 
     function loadMarkers(url){
         xmlhttp=null;
@@ -56,25 +57,31 @@
                 data = JSON.parse(data);
                 let features = data.features;
                 for (let i = 0; i < features.length; i++) {
+                    let r = Math.floor(Math.random()*(255-1)+1);
+                    let g = Math.floor(Math.random()*(255-1)+1);
+                    let b = Math.floor(Math.random()*(255-1)+1);
+                    let rgb = `rgba(${r},${g},${b})`;
                     let path = features[i].geometry.coordinates[0];
                     let polygon = new AMap.Polygon({
                         path: path,
-                        strokeColor: "yellow",
-                        strokeWeight: 50,
-                        strokeOpacity: 0.5,
-                        fillOpacity: 0.8,
-                        fillColor: 'red',
+                        strokeColor: "#191970",
+                        strokeWeight: 3,
+                        strokeOpacity: 1,
+                        fillOpacity: 0.4,
+                        fillColor: rgb,
+                        zIndex: 50,
                     })
                     polygon.on("click",function (e){
                         //构建信息窗体中显示的内容
                         let lng = e.lnglat.getLng();
                         let lat = e.lnglat.getLat();
-                        let address = features[i].properties.B_ADDRESS;
+                        let properties = features[i].properties;
                         var info = [];
                         info.push("<div><div><img style=\"float:left;\" src=\" https://webapi.amap.com/images/autonavi.png \"/></div> ");
-                        info.push("<div style=\"padding:0px 0px 0px 4px;\"><b>高德软件</b>");
-                        info.push("电话 : 010-84107000   邮编 : 100102");
-                        info.push("地址 :"+address+"</div></div>");
+                        info.push("SNAME : "+properties.S_NAME);
+                        info.push("S_ADDRESS : "+properties.S_ADDRESS);
+                        info.push("S_ONAME : "+properties.S_ONAME);
+                        info.push("S_OADDRESS : "+properties.S_OADDRESS);
                         infoWindow = new AMap.InfoWindow({
                             content: info.join("<br/>")  //使用默认信息窗体框样式，显示信息内容
                         });

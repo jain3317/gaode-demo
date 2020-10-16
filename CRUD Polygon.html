@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <style>
+        html,
+        body,
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <title>CRUD Polygon</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <script src="https://webapi.amap.com/maps?v=1.4.15&key=e4de42f852511d4fd44b8f66d58205c6&plugin=AMap.MouseTool,AMap.PolyEditor,AMap.MouseTool"></script>
+    <script src="https://a.amap.com/jsapi_demos/static/demo-center/js/demoutils.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<div class="input-card" style="width: 200px">
+    <h4 style="margin-bottom: 10px; font-weight: 600">多边形列表</h4>
+    <button class="btn" onclick="drawPolygon()" style="margin-bottom: 5px">绘制多边形</button>
+    <table id="dataList">
+
+        <script type="text/javascript">
+            let map = new AMap.Map("container", {
+                center: [116.434381, 39.898515],
+                zoom: 14
+            });
+
+            let mouseTool = new AMap.MouseTool(map)
+            let arr = [];
+
+            function toPolygon(index){
+                map.setFitView([ arr[index].Sc ]);
+            }
+            function drawPolygon () {
+                mouseTool.polygon({
+                    strokeColor: "#FF33FF",
+                    strokeOpacity: 1,
+                    strokeWeight: 1,
+                    fillColor: '#1791fc',
+                    fillOpacity: 0.4,
+                    // 线样式还支持 'dashed'
+                    strokeStyle: "solid",
+                    // strokeStyle是dashed时有效
+                    // strokeDasharray: [30,10],
+                })
+            }
+
+            var editingIndex = -1;
+            //编辑多边形
+            function editPolygon(obj,index){
+                if(editingIndex !== -1){
+                    alert("不能同时修改两个多边形");
+                    return ;
+                }
+                editingIndex = index;
+                // //定义折线对象
+                arr[index].open();
+                console.log(arr[index]);
+                map.setFitView([ arr[index].Sc ]);
+                beforeEdit(obj);
+                //构造折线编辑对象，并开启折线的编辑状态
+                // PolyEditor = new AMap.PolyEditor(map,polygon);
+                // PolyEditor.open();
+                // polyline.setMap(map);//地图上添加折线
+            }
+            function closeEdit(obj,index){
+                editingIndex = -1;
+                arr[index].close();
+                beforeCancle(obj);
+            }
+
+            mouseTool.on('draw', function(event) {
+                let name;
+                let obj = event.obj;
+                do{
+                    name = prompt("请输入多边形的名称");
+                }while (name === null || name === "")
+
+                // 添加
+                obj.extData = {name:name};
+                let polyEditor = new AMap.PolyEditor(map,obj);
+                polyEditor.on('end', function(event) {
+                    editingIndex[editingIndex] = event.obj;
+                })
+                arr.push(polyEditor);
+
+                console.log(arr);
+                log.info('覆盖物对象绘制完成');
+                mouseTool.close(false);
+                init();
+            })
+
+            // 初始化数据
+            function init(){
+                document.querySelector("#dataList").innerHTML = "";
+                let prev = " <tr>\n" +
+                    "            <th>编号</th>\n" +
+                    "            <th>名称</th>\n" +
+                    "            <th>操作</th>\n" +
+                    "        </tr>";
+                document.querySelector("#dataList").innerHTML += prev;
+                for (let i = 0; i < arr.length; i++) {
+                    let name = arr[i].Sc.extData.name;
+                    let html = "<tr>\n" +
+                        "            <th> "+(i+1)+"</th>\n" +
+                        "            <th> <a href='javascript:toPolygon("+i+")'>"+name+"</a></th>\n" +
+                        "            <th><button class=\"btn status\"  onclick=\"editPolygon(this,"+i+")\" style=\"margin-bottom: 5px\">编辑</button><button class=\"btn status\" style='display: none'  onclick=\"closeEdit(this,"+i+")\" style=\"margin-bottom: 5px\">取消</button><button class=\"btn status\"   onclick=\"deletePly("+i+")\" style=\"margin-bottom: 5px\">删除</button>" +
+                        "            </th>\n" +
+                        "        </tr>";
+                    document.querySelector("#dataList").innerHTML += html;
+                }
+            }
+
+            function beforeEdit(obj){
+                obj.style.display = "none";
+                let next = obj.nextElementSibling;
+                next.style.display = "block";
+            }
+
+            function beforeCancle(obj){
+                obj.style.display = "none";
+                let prev = obj.previousElementSibling;
+                prev.style.display = "block";
+            }
+
+            function deletePly(index){
+                if( editingIndex === index){
+                    editingIndex = -1;
+                }
+                if(!confirm("您确定要删除吗")) return ;
+                arr.splice(index,1);
+                console.log(arr);
+                initPlygon();
+                init();
+            }
+
+            // 删除后重新展示
+            function initPlygon(){
+                mouseTool.close(true);
+                for (let i = 0; i < arr.length; i++) {
+                    var path = arr[i].Sc.Ce.path;
+                    var polygon = new AMap.Polygon({
+                        path:path,
+                        strokeColor: "#FF33FF",
+                        strokeOpacity: 1,
+                        strokeWeight: 1,
+                        fillColor: '#1791fc',
+                        fillOpacity: 0.4,
+                        // 线样式还支持 'dashed'
+                        strokeStyle: "solid",
+                        // strokeStyle是dashed时有效
+                        // strokeDasharray: [30,10],
+                    })
+
+                    map.add(polygon)
+                    // 缩放地图到合适的视野级别
+                }
+
+
+            }
+
+
+        </script>
+    </table>
+</div>
+</body>
+</html>

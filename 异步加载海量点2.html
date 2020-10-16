@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 原始地址：//webapi.amap.com/ui/1.1/ui/misc/PointSimplifier/examples/multi-icons.html -->
+    <base href="//webapi.amap.com/ui/1.1/ui/misc/PointSimplifier/examples/" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>图标分组</title>
+    <style>
+        html,
+        body,
+        #container {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+        }
+
+        #loadingTip {
+            position: absolute;
+            z-index: 9999;
+            top: 0;
+            left: 0;
+            padding: 3px 10px;
+            background: red;
+            color: #fff;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="container"></div>
+<script type="text/javascript" src='https:/webapi.amap.com/maps?v=2.0&key=e4de42f852511d4fd44b8f66d58205c6'></script>
+<!-- UI组件库 1.0 -->
+<script src="https://webapi.amap.com/ui/1.1/main.js?v=1.1.1"></script>
+<script type="text/javascript">
+    //创建地图
+    var map = new AMap.Map('container', {
+        zoom: 4
+    });
+    // let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=lhwy%3ALH_BUILD&maxFeatures=50&outputFormat=application%2Fjson";
+    let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=lhwy%3ALH_BUILD&outputFormat=application%2Fjson"
+    let icon = "https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png";
+
+    function getLocate(locateArr){
+        let x;
+        let y;
+        let len = locateArr.length;
+
+        if(len === 0) return [];
+        if(len === 1) return locateArr[0];
+
+        let mid = parseInt(len / 2);
+        if(len % 2 === 0){
+            x = (locateArr[mid-1][0] + locateArr[mid][0]) / 2;
+            y = (locateArr[mid-1][1] + locateArr[mid][1]) / 2;
+        }else{
+            x = locateArr[mid-1][0];
+            y = locateArr[mid-1][1];
+        }
+        return [x,y];
+    }
+
+    function initPage(PointSimplifier, $) {
+
+        var pointSimplifierIns, groupStyleMap;
+
+        pointSimplifierIns = new PointSimplifier({
+            zIndex: 115,
+            //autoSetFitView: false,
+            map: map, //所属的地图实例
+
+            getPosition: function (item) {
+
+                console.log(item);
+
+                // if (!lngLatLine) {
+                //     return null;
+                // }
+
+                // var parts = lngLatLine.split(',');
+
+                return item;
+            },
+            getHoverTitle: function (dataItem, idx) {
+                return '序号: ' + idx;
+            },
+            //使用GroupStyleRender
+            renderConstructor: PointSimplifier.Render.Canvas.GroupStyleRender,
+            renderOptions: {
+                //点的样式
+                pointStyle: {
+                    width: 5,
+                    height: 10,
+                    fillStyle: '#A2D0FA'
+                },
+                getGroupId: function (item, idx) {
+
+                    return item.groupId;
+                },
+                groupStyleOptions: function () {
+
+                    return groupStyleMap;
+                }
+
+            }
+        });
+
+        function onIconLoad() {
+            pointSimplifierIns.renderLater();
+        }
+
+        function onIconError(e) {
+            alert('图片加载失败！');
+        }
+
+        groupStyleMap = {
+            pointStyle: {
+                //绘制点占据的矩形区域
+                content: PointSimplifier.Render.Canvas.getImageContent(icon, onIconLoad, onIconError),
+                //宽度
+                width: 32,
+                //高度
+                height: 38,
+                //定位点为中心
+                offset: ['-50%', '-50%'],
+                fillStyle: null,
+                //strokeStyle: null
+            }
+        };
+
+        $('<div id="loadingTip">加载数据，请稍候...</div>').appendTo(document.body);
+        $.get(url, function(csv) {
+
+            $('#loadingTip').remove();
+
+            var data = [];
+            let features = csv.features;
+            for (let i = 0; i < features.length; i++) {
+                let coordinates = features[i].geometry.coordinates[0];
+                let locate = getLocate(coordinates);
+                data.push(locate);
+            }
+
+            pointSimplifierIns.setData(data);
+        });
+    }
+
+    AMapUI.load(['ui/misc/PointSimplifier', 'lib/$'], function(PointSimplifier, $) {
+
+        if (!PointSimplifier.supportCanvas) {
+            alert('当前环境不支持 Canvas！');
+            return;
+        }
+
+        initPage(PointSimplifier, $);
+    });
+</script>
+</body>
+
+</html>

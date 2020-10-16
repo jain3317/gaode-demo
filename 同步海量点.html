@@ -19,7 +19,7 @@
         .icons {
             width: 51px;
             height: 55px;
-            background-image: url("//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png");
+            background-image: url("https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png");
             background-size: auto;
             padding-top: 15px;
             color: white;
@@ -38,7 +38,8 @@
 
     let xmlhttp;
     let count = 0;
-    let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=lhwy%3ALH_BUILD&maxFeatures=50&outputFormat=application%2Fjson";
+    let url = "http://218.16.123.17:6081/geoserver/lhwy/ows?service=WFS&version=1.0.0&request=GetFeature&maxFeatures=50&typeName=lhwy%3ALH_BUILD&outputFormat=application%2Fjson";
+    let animation = "AMAP_ANIMATION_DROP";
 
     function loadMarkers(url){
         xmlhttp=null;
@@ -70,9 +71,8 @@
                     let position = getLocate(locate);
                     // 构造点标记
                     let content = getContent();
-                    let icon = "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png";
-                    let animation = "AMAP_ANIMATION_DROP";
-                    let marker = new AMap.Marker({icon,position,content,animation});
+
+                    let marker = new AMap.Marker({position,content,animation});
                     map.add(marker);
                 }
             }else{
